@@ -1,14 +1,14 @@
-#include<Arduino.h>
+#include <Arduino.h>
+#include <WiFi.h>
+#include <PubSubClient.h>
 #include <Adafruit_NeoPixel.h>
+
 #define PIN1        27
 #define UPPIXELS 9
 #define DELAYVAL  50
 Adafruit_NeoPixel upline(UPPIXELS, PIN1, NEO_GRBW + NEO_KHZ800);
-void setup()
-{
-  upline.begin();
-  upline.show();
-}
+
+bool light_status = true;
 
 int snakeLength = 1;
 int snakeSpeed = 100;
@@ -19,34 +19,159 @@ int tailPos = 0;
 uint32_t lastTime = millis();
 uint32_t firstPixelHue = 0;
 
-void loop()
-{
+const char *SSID = "Breath of the Wifi";
+const char *PWD = "supervolcano55";
+const char *HUTAO = "192.168.0.193";
+const char *TOPIC_CORN = "corn";
+const char *TOPIC_BOOLY = "booly";
+const char *TOPIC_LUX = "lux";
+int mqttPort = 1616;
 
-if(snakeLength >= UPPIXELS) {snakeLength = UPPIXELS - 1;}
+WiFiClient wifiClient;
+PubSubClient mqttClient(wifiClient); 
 
+void connectToWiFi();
+void callback(char* topic, byte* payload, unsigned int length);
+void setupMQTT();
+void reconnect();
 
-  for(int i=0 ; i<UPPIXELS ; i++)
-  {
+////////////////////////
 
-      int pixelHue = firstPixelHue + (i*65536L/UPPIXELS);
-      upline.setPixelColor(i, upline.gamma32(upline.ColorHSV(pixelHue,255,255)));
-  
+void setup() {
+  Serial.begin(115200);
+  connectToWiFi();
+  setupMQTT();
+  pinMode(27, OUTPUT);
+  upline.begin();
   upline.show();
-  firstPixelHue += 32;
+}
 
-  if((millis() - lastTime) > snakeSpeed)
+void loop() {
+  if (!mqttClient.connected())
+    reconnect();
+  mqttClient.loop();
+
+        if(light_status == 1)
+      {
+
+        if(snakeLength >= UPPIXELS) {snakeLength = UPPIXELS - 1;}
+
+
+          for(int i=0 ; i<UPPIXELS ; i++)
+          {
+
+              int pixelHue = firstPixelHue + (i*65536L/UPPIXELS);
+              upline.setPixelColor(i, upline.gamma32(upline.ColorHSV(pixelHue,255,255)));
+          
+          upline.show();
+          firstPixelHue += 32;
+
+          if((millis() - lastTime) > snakeSpeed)
+          {
+            if(++headPos >= UPPIXELS)
+            {
+              headPos = 0;
+            }
+            if(++tailPos >= UPPIXELS)
+            {
+              tailPos = 0;
+            }
+            lastTime = millis();
+          }
+
+          }
+
+      }
+      else
+      {
+        upline.clear();
+        upline.show();
+      }
+}
+
+////////////////////////
+
+void callback(char* topic, byte* payload, unsigned int length) {
+
+//Initialize some Variables for switching and payload conversion
+int callbackmode = 0;
+int num_payload = -1;
+String str_payload;
+char buffer_payload[length];
+char out_msg[40];
+//Saving Payload into a buffer, and String
+for (int i = 0; i < length; i++) 
+{
+  buffer_payload[i] = char(payload[i]);
+}
+str_payload = String(buffer_payload);
+
+if(strcmp(topic, TOPIC_LUX) == 0)
+{
+  callbackmode = 4;
+}
+
+//Primary switch statement for different functions by topic
+//Master list
+  switch(callbackmode)
   {
-    if(++headPos >= UPPIXELS)
-    {
-      headPos = 0;
-    }
-    if(++tailPos >= UPPIXELS)
-    {
-      tailPos = 0;
-    }
-    lastTime = millis();
-  }
+    case 4:
+      num_payload = str_payload.toInt();
+      if(num_payload == 1)
+      { light_status = true; }
+      else
+      { light_status = false; }
+      break;
 
-  }
+    //Default Functionality, read off message and topic
+    default:
+      Serial.print("Callback - ");
+      Serial.println(topic);
+      Serial.print("Message:");
 
+      for (int i = 0; i < length; i++) 
+      {
+        Serial.print(char(payload[i]));
+      }
+      Serial.println();
+  }
+  
+}
+
+////////////////////////
+
+void connectToWiFi() {
+  Serial.print("Connecting to ");
+ 
+  WiFi.begin(SSID, PWD);
+  Serial.println(SSID);
+  while (WiFi.status() != WL_CONNECTED) {
+    Serial.print(".");
+    delay(500);
+  }
+  Serial.print("Connected.");
+}
+
+void setupMQTT() {
+  mqttClient.setServer(HUTAO, mqttPort);
+  mqttClient.setCallback(callback);
+}
+
+void reconnect() {
+  Serial.println("Connecting to MQTT Broker...");
+  while (!mqttClient.connected()) {
+      Serial.println("Reconnecting to MQTT Broker..");
+      String clientId = "Crumble-";
+      clientId += String(random(0xff), HEX);
+      
+      if (mqttClient.connect(clientId.c_str())) {
+        Serial.println("Connected.");
+        // subscribe to topic
+        mqttClient.subscribe("corn");
+        mqttClient.subscribe("potato");
+        mqttClient.subscribe("booly");
+        mqttClient.subscribe("lux");
+      }
+      
+  }
 }
