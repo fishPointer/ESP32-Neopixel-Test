@@ -8,15 +8,8 @@
 #define DELAYVAL  50
 Adafruit_NeoPixel upline(UPPIXELS, PIN1, NEO_GRBW + NEO_KHZ800);
 
-bool light_status = true;
+int light_status = 0;
 
-int snakeLength = 1;
-int snakeSpeed = 100;
-
-int headPos = snakeLength - 1;
-int tailPos = 0;
-
-uint32_t lastTime = millis();
 uint32_t firstPixelHue = 0;
 
 const char *SSID = "Breath of the Wifi";
@@ -34,6 +27,8 @@ void connectToWiFi();
 void callback(char* topic, byte* payload, unsigned int length);
 void setupMQTT();
 void reconnect();
+void neo_Rainbow();
+void neo_White();
 
 ////////////////////////
 
@@ -47,35 +42,26 @@ void setup() {
 }
 
 void loop() {
- 
- 
+
   if (!mqttClient.connected())
     reconnect();
   mqttClient.loop();
-  Serial.println(millis());
 
-        if(light_status == 1)
-      {
+  if(light_status == 1)
+  {
+    neo_Rainbow();
+  }
+  if(light_status == 2)
+  {
+    neo_White();
+  }
 
-          for(int i=0 ; i<UPPIXELS ; i++)
-          {
 
-              int pixelHue = firstPixelHue + (i*65536L/UPPIXELS);
-              upline.setPixelColor(i, upline.gamma32(upline.ColorHSV(pixelHue,255,255)));
-          
-          upline.show();
-          firstPixelHue += 4;
-          
-
-          }
-          Serial.println("Updating Lights");
-          Serial.println(millis());
-      }
-      else
-      {
-        upline.clear();
-        upline.show();
-      }
+  else
+  {
+      upline.clear();
+      upline.show();
+  }
 
 
 }
@@ -108,10 +94,7 @@ if(strcmp(topic, TOPIC_LUX) == 0)
   {
     case 4:
       num_payload = str_payload.toInt();
-      if(num_payload == 1)
-      { light_status = true; }
-      else
-      { light_status = false; }
+      light_status = num_payload;
       break;
 
     //Default Functionality, read off message and topic
@@ -165,4 +148,27 @@ void reconnect() {
       }
       
   }
+}
+
+/////////////////////////////////////////
+// Neopixel functions //
+
+void neo_Rainbow()
+{
+  for(int i=0 ; i<UPPIXELS ; i++)
+  {
+    int pixelHue = firstPixelHue + (i*65536L/UPPIXELS);
+    upline.setPixelColor(i, upline.gamma32(upline.ColorHSV(pixelHue,255,255)));   
+    firstPixelHue += 1;
+  }
+  upline.show();
+}
+
+void neo_White()
+{
+  for(int i=0 ; i<UPPIXELS ; i++)
+  {
+    upline.setPixelColor(i, upline.Color(0,0,0,255));
+  }
+  upline.show();
 }
