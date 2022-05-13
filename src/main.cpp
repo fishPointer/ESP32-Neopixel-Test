@@ -4,7 +4,7 @@
 #include <Adafruit_NeoPixel.h>
 
 #define PIN1        27
-#define UPPIXELS 9
+#define UPPIXELS 58
 #define DELAYVAL  50
 Adafruit_NeoPixel upline(UPPIXELS, PIN1, NEO_GRBW + NEO_KHZ800);
 
@@ -47,15 +47,15 @@ void setup() {
 }
 
 void loop() {
+ 
+ 
   if (!mqttClient.connected())
     reconnect();
   mqttClient.loop();
+  Serial.println(millis());
 
         if(light_status == 1)
       {
-
-        if(snakeLength >= UPPIXELS) {snakeLength = UPPIXELS - 1;}
-
 
           for(int i=0 ; i<UPPIXELS ; i++)
           {
@@ -64,29 +64,20 @@ void loop() {
               upline.setPixelColor(i, upline.gamma32(upline.ColorHSV(pixelHue,255,255)));
           
           upline.show();
-          firstPixelHue += 32;
-
-          if((millis() - lastTime) > snakeSpeed)
-          {
-            if(++headPos >= UPPIXELS)
-            {
-              headPos = 0;
-            }
-            if(++tailPos >= UPPIXELS)
-            {
-              tailPos = 0;
-            }
-            lastTime = millis();
-          }
+          firstPixelHue += 4;
+          
 
           }
-
+          Serial.println("Updating Lights");
+          Serial.println(millis());
       }
       else
       {
         upline.clear();
         upline.show();
       }
+
+
 }
 
 ////////////////////////
