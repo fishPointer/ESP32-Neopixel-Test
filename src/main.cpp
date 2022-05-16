@@ -3,7 +3,7 @@
 #include <PubSubClient.h>
 #include <Adafruit_NeoPixel.h>
 
-#define PIN1        27
+#define PIN1        25
 #define UPPIXELS 58
 #define DELAYVAL  50
 Adafruit_NeoPixel upline(UPPIXELS, PIN1, NEO_GRBW + NEO_KHZ800);
