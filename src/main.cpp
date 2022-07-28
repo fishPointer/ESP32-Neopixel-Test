@@ -4,11 +4,15 @@
 #include <Adafruit_NeoPixel.h>
 
 #define PIN1        25
+#define PIN2        27
 #define UPPIXELS 58
+#define DOWNPIXELS 43
 #define DELAYVAL  50
 Adafruit_NeoPixel upline(UPPIXELS, PIN1, NEO_GRBW + NEO_KHZ800);
+Adafruit_NeoPixel downline(DOWNPIXELS, PIN2, NEO_GRBW + NEO_KHZ800);
 
-int light_status = 0;
+int light_status_top = 0;
+int light_status_bot = 0;
 int R_val = 0;
 int G_val = 0;
 int B_val = 0;
@@ -16,12 +20,13 @@ int W_val = 0;
 
 uint32_t firstPixelHue = 0;
 
-const char *SSID = "Breath of the Wifi";
-const char *PWD = "supervolcano55";
-const char *HUTAO = "192.168.0.193";
+const char *SSID = "Fish Tank";
+const char *PWD = "jellyfish64";
+const char *HUTAO = "10.0.0.143";
 const char *TOPIC_CORN = "corn";
 const char *TOPIC_BOOLY = "booly";
-const char *TOPIC_LUX = "lux";
+const char *TOPIC_LUX_BOT = "lux/bot";
+const char *TOPIC_LUX_TOP = "lux/top";
 const char *TOPIC_RGBW_R = "rgbw/r";
 const char *TOPIC_RGBW_G = "rgbw/g";
 const char *TOPIC_RGBW_B = "rgbw/b";
@@ -35,9 +40,14 @@ void connectToWiFi();
 void callback(char* topic, byte* payload, unsigned int length);
 void setupMQTT();
 void reconnect();
-void neo_Rainbow();
-void neo_White();
-void neo_Slide();
+void neo_Rainbow_top();
+void neo_White_top();
+void neo_Slide_top();
+void neo_Off_top();
+void neo_Rainbow_bot();
+void neo_White_bot();
+void neo_Slide_bot();
+void neo_Off_bot();
 
 ////////////////////////
 
@@ -46,36 +56,58 @@ void setup() {
   connectToWiFi();
   setupMQTT();
   pinMode(27, OUTPUT);
+  pinMode(25, OUTPUT);
   upline.begin();
   upline.show();
+  downline.begin();
+  downline.show();
 }
 
 void loop() {
 
+
+//Commented out until I can circumvent Comcast's Malware
   if (!mqttClient.connected())
     reconnect();
   mqttClient.loop();
 
-  if(light_status == 1)
+  if(light_status_top == 0)
   {
-    neo_Rainbow();
+    neo_Off_top();
   }
-  if(light_status == 2)
+  if(light_status_top == 1)
   {
-    neo_White();
+    neo_Rainbow_top();
   }
-  if(light_status == 3)
+  if(light_status_top == 2)
   {
-    neo_Slide();
+    neo_White_top();
+  }
+  if(light_status_top == 3)
+  {
+    neo_Slide_top();
+  }
+
+  if(light_status_bot == 0)
+  {
+    neo_Off_bot();
+  }
+  if(light_status_bot == 1)
+  {
+    neo_Rainbow_bot();
+  }
+  if(light_status_bot == 2)
+  {
+    neo_White_bot();
+  }
+  if(light_status_bot == 3)
+  {
+    neo_Slide_bot();
   }
 
 
-  else
-  {
-      upline.clear();
-      upline.show();
-  }
-
+//Backup in case I can't beat comcast
+//neo_Rainbow();
 
 }
 
@@ -83,48 +115,56 @@ void loop() {
 
 void callback(char* topic, byte* payload, unsigned int length) {
 
-//Initialize some Variables for switching and payload conversion
-int callbackmode = 0;
-int num_payload = -1;
-String str_payload;
-char buffer_payload[length];
-char out_msg[40];
-//Saving Payload into a buffer, and String
-for (int i = 0; i < length; i++) 
-{
-  buffer_payload[i] = char(payload[i]);
-}
-str_payload = String(buffer_payload);
+  //Initialize some Variables for switching and payload conversion
+  int callbackmode = 0;
+  int num_payload = -1;
+  String str_payload;
+  char buffer_payload[length];
+  char out_msg[40];
+  //Saving Payload into a buffer, and String
+  for (int i = 0; i < length; i++) 
+  {
+    buffer_payload[i] = char(payload[i]);
+  }
+  str_payload = String(buffer_payload);
 
-if(strcmp(topic, TOPIC_LUX) == 0)
-{
-  callbackmode = 4;
-}
+  if(strcmp(topic, TOPIC_LUX_BOT) == 0)
+  {
+    callbackmode = 3;
+  }
+  if(strcmp(topic, TOPIC_LUX_TOP) == 0)
+  {
+    callbackmode = 4;
+  }
+  if(strcmp(topic, TOPIC_RGBW_R) == 0)
+  {
+    callbackmode = 5;
+  }
+  if(strcmp(topic, TOPIC_RGBW_G) == 0)
+  {
+    callbackmode = 6;
+  }
+  if(strcmp(topic, TOPIC_RGBW_B) == 0)
+  {
+    callbackmode = 7;
+  }
+  if(strcmp(topic, TOPIC_RGBW_W) == 0)
+  {
+    callbackmode = 8;
+  }
 
-if(strcmp(topic, TOPIC_RGBW_R) == 0)
-{
-  callbackmode = 5;
-}
-if(strcmp(topic, TOPIC_RGBW_G) == 0)
-{
-  callbackmode = 6;
-}
-if(strcmp(topic, TOPIC_RGBW_B) == 0)
-{
-  callbackmode = 7;
-}
-if(strcmp(topic, TOPIC_RGBW_W) == 0)
-{
-  callbackmode = 8;
-}
-
-//Primary switch statement for different functions by topic
-//Master list
+  //Primary switch statement for different functions by topic
+  //Master list
   switch(callbackmode)
   {
+
+    case 3:
+      num_payload = str_payload.toInt();
+      light_status_bot = num_payload;
+      break;
     case 4:
       num_payload = str_payload.toInt();
-      light_status = num_payload;
+      light_status_top = num_payload;
       break;
 
     case 5:
@@ -191,7 +231,8 @@ void reconnect() {
         mqttClient.subscribe("corn");
         mqttClient.subscribe("potato");
         mqttClient.subscribe("booly");
-        mqttClient.subscribe("lux");
+        mqttClient.subscribe("lux/bot");
+        mqttClient.subscribe("lux/top");
         mqttClient.subscribe("rgbw/r");
         mqttClient.subscribe("rgbw/g");
         mqttClient.subscribe("rgbw/b");
@@ -204,7 +245,7 @@ void reconnect() {
 /////////////////////////////////////////
 // Neopixel functions //
 
-void neo_Rainbow()
+void neo_Rainbow_top()
 {
   for(int i=0 ; i<UPPIXELS ; i++)
   {
@@ -215,7 +256,7 @@ void neo_Rainbow()
   upline.show();
 }
 
-void neo_White()
+void neo_White_top()
 {
   for(int i=0 ; i<UPPIXELS ; i++)
   {
@@ -224,11 +265,55 @@ void neo_White()
   upline.show();
 }
 
-void neo_Slide()
+void neo_Slide_top()
 {
   for(int i=0 ; i<UPPIXELS ; i++)
   {
     upline.setPixelColor(i, upline.Color(R_val,G_val,B_val,W_val));
   }
   upline.show();
+}
+
+void neo_Off_top()
+{
+  upline.clear();
+  upline.show();
+}
+
+// There should be some way to pass upline. or downline. as a variable
+// Pass object as variable
+
+void neo_Rainbow_bot()
+{
+  for(int i=0 ; i<DOWNPIXELS ; i++)
+  {
+    int pixelHue = firstPixelHue + (i*65536L/DOWNPIXELS);
+    downline.setPixelColor(i, downline.gamma32(downline.ColorHSV(pixelHue,255,255)));   
+    firstPixelHue += 1;
+  }
+  downline.show();
+}
+
+void neo_White_bot()
+{
+  for(int i=0 ; i<DOWNPIXELS ; i++)
+  {
+    downline.setPixelColor(i, downline.Color(0,0,0,255));
+  }
+  downline.show();
+}
+
+void neo_Slide_bot()
+{
+  for(int i=0 ; i<DOWNPIXELS ; i++)
+  {
+    downline.setPixelColor(i, downline.Color(R_val,G_val,B_val,W_val));
+  }
+  downline.show();
+}
+
+void neo_Off_bot()
+{
+  downline.clear();
+  downline.show();
 }
