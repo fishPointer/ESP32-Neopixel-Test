@@ -66,48 +66,57 @@ void setup() {
 void loop() {
 
 
-//Commented out until I can circumvent Comcast's Malware
   if (!mqttClient.connected())
     reconnect();
   mqttClient.loop();
 
-  if(light_status_top == 0)
+
+
+  switch(light_status_top)
   {
+    case 0:
     neo_Off_top();
-  }
-  if(light_status_top == 1)
-  {
+    break;
+
+    case 1:
     neo_Rainbow_top();
-  }
-  if(light_status_top == 2)
-  {
+    break;
+
+    case 2:
     neo_White_top();
-  }
-  if(light_status_top == 3)
-  {
+    break;
+
+    case 3:
     neo_Slide_top();
+    break;
+
+    default:
+    neo_Off_top();
+    Serial.println(light_status_top);
   }
 
-  if(light_status_bot == 0)
+  switch(light_status_bot)
   {
+    case 0:
     neo_Off_bot();
-  }
-  if(light_status_bot == 1)
-  {
+    break;
+
+    case 1:
     neo_Rainbow_bot();
-  }
-  if(light_status_bot == 2)
-  {
+    break;
+
+    case 2:
     neo_White_bot();
-  }
-  if(light_status_bot == 3)
-  {
+    break;
+
+    case 3:
     neo_Slide_bot();
+    break;
+
+    default:
+    neo_Off_bot();
+    Serial.println(light_status_bot);
   }
-
-
-//Backup in case I can't beat comcast
-//neo_Rainbow();
 
 }
 
